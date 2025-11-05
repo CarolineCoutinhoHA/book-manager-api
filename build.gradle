@@ -1,0 +1,55 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.7'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+description = 'Demo project for Spring Boot'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+configurations {
+    // Garante que o Lombok e o MapStruct sejam processados
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // --- Spring Core e DB ---
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    runtimeOnly 'com.h2database:h2'
+
+    // --- Mapeamento e Anotações ---
+
+    // 🚨 1. MapStruct (A interface)
+    implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+
+    // 🚨 2. Lombok (Necessário para a compilação do MapStruct)
+    compileOnly 'org.projectlombok:lombok'
+
+    // 🚨 3. Processadores (CRUCIAL: Onde a mágica acontece)
+    annotationProcessor 'org.projectlombok:lombok'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final' // GERA A IMPLEMENTAÇÃO DO MAPPER
+
+    // --- Testes ---
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
