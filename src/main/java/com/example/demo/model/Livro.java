@@ -11,29 +11,40 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-@Entity
-@Table(name = "livro")
-@Getter
-@NoArgsConstructor
-@ToString(onlyExplicitlyIncluded = true)
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+// ----------------------------------------------------
+// ANOTAÇÕES BÁSICAS DE PERSISTÊNCIA E LOMBOK
+// ----------------------------------------------------
+@Entity // Marca esta classe como uma entidade JPA (tabela no DB)
+@Table(name = "livro") // Define o nome da tabela no banco
+@Getter // Gera todos os métodos getters
+@NoArgsConstructor // Gera o construtor sem argumentos (OBRIGATÓRIO para JPA)
+@ToString(onlyExplicitlyIncluded = true) // Gera toString apenas para campos @ToString.Include
+@EqualsAndHashCode(onlyExplicitlyIncluded = true) // Gera equals/hashCode apenas para campos @EqualsAndHashCode.Include
 public class Livro {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    // ----------------------------------------------------
+    // 1. IDENTIFICADORES
+    // ----------------------------------------------------
+
+    @Id // Chave Primária (PK)
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // Auto-incremento pelo DB
     @Column(name = "id_livro")
     @ToString.Include
-    private Long idLivro;
+    private Long idLivro; // PK interna
 
-    @EqualsAndHashCode.Include
+    @EqualsAndHashCode.Include // Incluído na comparação de objetos
     @Column(name = "uuid", nullable = false, unique = true)
-    private UUID uuid;
+    private UUID uuid; // ID público/externo
+
+    // ----------------------------------------------------
+    // 2. CAMPOS DE DADOS E REGRAS DE NEGÓCIO (RN)
+    // ----------------------------------------------------
 
     @Column(name = "titulo", nullable = false)
     @ToString.Include
     private String titulo;
 
-    @Column(name = "isbn", nullable = false, unique = true)
+    @Column(name = "isbn", nullable = false, unique = true) // RN: ISBN deve ser único no DB
     @ToString.Include
     private String isbn;
 
@@ -43,51 +54,80 @@ public class Livro {
 
     @Column(name = "categoria", nullable = false)
     @ToString.Include
-    private Categoria categoria;
+    private Categoria categoria; // Uso do nosso ENUM customizado
 
+    @Column(name = "disponibilidade", nullable = false)
+    private boolean disponibilidade = true; // Campo para SOFT DELETE (true = ativo)
+
+    // ----------------------------------------------------
+    // 3. RELACIONAMENTO MANY-TO-MANY (M:N) - Lado INVERSO
+    // ----------------------------------------------------
+
+    // MappedBy: Diz ao JPA que a tabela de junção é gerenciada pelo campo 'livrosSet' em Autor.java
     @ManyToMany(mappedBy = "livrosSet", fetch = FetchType.LAZY)
-    @ToString.Exclude
-    private Set<Autor> autores = new HashSet<>();
+    @ToString.Exclude // Excluímos do toString para evitar LazyInitializationException
+    private final Set<Autor> autores = new HashSet<>(); // Coleção de autores
 
-    @PrePersist
+    // ----------------------------------------------------
+    // 4. CICLO DE VIDA E CONSTRUTORES
+    // ----------------------------------------------------
+
+    @PrePersist // Executa ANTES de salvar a primeira vez
     public void prePersist(){
+        // RN: Garante que o UUID seja gerado
         if (uuid == null){
             uuid = UUID.randomUUID();
         }
     }
 
-    public Livro(String titulo, String isbn, LocalDate dataDePublicacao, com.example.demo.model.Categoria categoria) {
+    // Construtor Manual: Usado pelo Service para criar um NOVO Livro (recebe dados do DTO)
+    public Livro(String titulo, String isbn, LocalDate dataDePublicacao, Categoria categoria) {
         this.titulo = titulo;
         this.isbn = isbn;
         this.dataDePublicacao = dataDePublicacao;
         this.categoria = categoria;
     }
 
+    // ----------------------------------------------------
+    // 5. MÉTODOS DE DOMÍNIO (ESCRITA SEGURA E RN)
+    // ----------------------------------------------------
+
+    // Setter de Domínio: Permite a atualização controlada pelo Mapper
     public void setTitulo(String titulo) {
         this.titulo = titulo;
     }
 
+    // Setter de Domínio: Permite a atualização controlada pelo Mapper
     public void setDataDePublicacao(LocalDate dataDePublicacao) {
         this.dataDePublicacao = dataDePublicacao;
     }
 
+    // Setter de Domínio: Permite a atualização controlada pelo Mapper
     public void setCategoria(Categoria categoria) {
         this.categoria = categoria;
     }
 
+    // Método de Domínio (RN Imutável Flexível): Permite corrigir o ISBN
     public void corrigirIsbn(String novoIsbn){
         this.isbn = novoIsbn;
     }
 
+    // Método de Domínio (Gerenciamento Bidirecional M:N)
     public void adicionarAutor(Autor autor){
-
+        // 1. Adiciona o Autor à coleção deste Livro (Lado Inverso)
         this.autores.add(autor);
 
+        // 2. Sincroniza: Adiciona ESTE Livro ao Autor (Lado Dono) - CRUCIAL para o JPA salvar a M:N
         autor.atribuirLivroAoAutor(this);
-
-
     }
 
+    // Método de Domínio (Soft Delete Reversível): Marca como ATIVO (disponível)
+    public void disponivel (){
+        this.disponibilidade = true;
+    }
 
-
+    // Método de Domínio (Soft Delete): Marca como INATIVO (logicamente deletado)
+    public void indisponivel(){
+        this.disponibilidade = false;
+    }
 }
