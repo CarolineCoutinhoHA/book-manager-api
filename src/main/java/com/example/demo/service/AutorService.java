@@ -11,8 +11,10 @@ import com.example.demo.repository.AutorRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,7 +33,7 @@ public class AutorService {
     //METODOS HELPERS
 
     //HELPER 1: Busca o Autor por ID ou Lança 404
-    private Autor findAutorOrThrow(Long id){
+    private Autor findAutorOrThrow(Long id) {
 
         return autorRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Autor com ID " + id + " não encontrado."));
@@ -45,20 +47,22 @@ public class AutorService {
                 .filter(autor -> idAutor == null || !autor.getIdAutor().equals(idAutor))
                 .filter(autor -> autor.getEmail().equals(email))
                 .findFirst() // Se encontra um diferente, para aqu
-                .ifPresent(autor -> {throw new BusinessException("E-mail " + email + " já resistrado. Não é permitido duplicidades.");
+                .ifPresent(autor -> {
+                    throw new BusinessException("E-mail " + email + " já resistrado. Não é permitido duplicidades.");
                 });
     }
+
 
     //METODOS PUBLICOS
 
     //1. Criar Autor (POST)
     @Transactional
-    public AutorResponseDTO createAutor(AutorRequestDTO autorRequestDTO){
+    public AutorResponseDTO createAutor(AutorRequestDTO autorRequestDTO) {
 
         //1. RN: Validação de Unicidade do e-mail (chama helper 2, Id atual é null)
-       checkEmailUnique(autorRequestDTO.email(), null);
+        checkEmailUnique(autorRequestDTO.email(), null);
 
-       //2. Mapeamento: Usa o construtor custumizado no Model (criação segura)
+        //2. Mapeamento: Usa o construtor custumizado no Model (criação segura)
         Autor autor = new Autor(autorRequestDTO.nome(), autorRequestDTO.email(), autorRequestDTO.cep(), autorRequestDTO.telefone());
 
         //3. Persistencia: O JPA salva o objeto (e o @PrePersitegera o UUID)
@@ -68,7 +72,7 @@ public class AutorService {
 
     //2.Atualizar Autor (PUT)
     @Transactional
-    public AutorResponseDTO updateAutor(Long id, AutorRequestDTO autorRequestDTO){
+    public AutorResponseDTO updateAutor(Long id, AutorRequestDTO autorRequestDTO) {
 
         //1. Busca Autor Existente(HELPER 1)
         Autor autorExistente = findAutorOrThrow(id);
@@ -88,7 +92,7 @@ public class AutorService {
 
     //Deletar Autor (SOFT DELETE)
     @Transactional
-    public void deleteAutor(Long id){
+    public void deleteAutor(Long id) {
         Autor autor = findAutorOrThrow(id); //1. Busca o Autor
 
         //2. SOFT DELETE: Chama o metodo de domínio para marcar como indiponivel
@@ -109,7 +113,7 @@ public class AutorService {
     }
 
     //Listar todos os Autores (GET)
-    public List<AutorResponseDTO> findAllAutors(){
+    public List<AutorResponseDTO> findAllAutors() {
         //1. Busca todos no bando
         //2. Filtro de SOFT DELETE: usa o isDisponibilidade para retornar apenas os autores ativos.
         //3. Mapeia cada entidade para o DTO.
@@ -120,38 +124,57 @@ public class AutorService {
     }
 
     //Listar Autores: volta apenas nome e id (GET)
-    public List<NomeAutorDTO> findAllAutorsName(){
+    public List<NomeAutorDTO> findAllAutorsName() {
 
         return autorRepository.findAll().stream()
                 .filter(Autor::isDisponibilidade)
-                .map((autorMapper::toNomeAutor))
+                .map((autorMapper::toNomeAutorDTO))
                 .collect(Collectors.toList());
     }
 
-    //Listar todos os Autores (GET) - COM PAGINAÇÃO
+    /**
+     * 5. Listar Todos os Autores (GET) - COM PAGINAÇÃO
+     * Retorna o DTO leve (NomeAutorDTO) para eficiência de listagem.
+     */
     public Page<NomeAutorDTO> findAllAutosPaginacao(int page, int size) {
-
-        //1.Criar o objeto Pageable )instrução de paginação)
+        // 1. Criar o objeto Pageable (instrução de paginação)
         Pageable pageable = PageRequest.of(page, size, Sort.by("nome"));
 
-        //2. Busca e Filtra: Usa findAll(Pageable) + filtro de soft delete
-        Page<Autor> autorPage = autorRepository.findAll(pageable)
-                .map(autor -> autor); //Usado apenas para manter o Page
+        // 2. Busca e Filtra: Usa findAll(Pageable) para trazer os dados da página
+        Page<Autor> autorPage = autorRepository.findAll(pageable);
 
-        //Aplica o filtro de disponibilidade e recria a Page para refletir o soft delete.
-        //O stream só é necessário se o ifltro não puder ser feito na query, como é o caso do soft delete via dominio.
-        List<Autor> autoresAtivos =  autorPage.getContent().stream()
+        // 3. Aplica o filtro de disponibilidade e re-cria a Page para refletir o Soft Delete.
+        List<Autor> autoresAtivos = autorPage.getContent().stream()
                 .filter(Autor::isDisponibilidade)
                 .collect(Collectors.toList());
 
-        //Cria um PageImpl com os resultados ativos para retornar metadados corretos
+        // Cria um PageImpl com os resultados ativos para retornar metadados corretos
         Page<Autor> filteredPage = new PageImpl<>(autoresAtivos, pageable, autorRepository.count());
 
-        //3. Mapeia a page de entidades para a page de dtos leves (NomeAutorDTO)
-        return filteredPage.map(autorMapper::toNomeAutor);
+        // 4. Mapeia a Page de Entidades para a Page de DTOs leves (NomeAutorDTO)
+        return filteredPage.map(autorMapper::toNomeAutorDTO);
+
+
     }
 
+    // Dentro da classe AuthorService (após o findAllAutors)
 
-
-
+    /**
+     * 6. Buscar Autor por E-mail (Simulando busca por CPF/Identificador Único)
+     * Retorna um único Autor (o email é único no DB).
+     */
+    public AutorResponseDTO findAutorByEmail(String email) {
+        // Lógica: Busca todos os autores ativos e filtra pelo e-mail
+        return autorRepository.findAll().stream()
+                .filter(Autor::isDisponibilidade) // Apenas ativos
+                .filter(autor -> autor.getEmail().equals(email))
+                .map(autorMapper::toResponseDTO)
+                .findFirst() // Como o e-mail é único, buscamos o primeiro
+                .orElseThrow(() -> new ResourceNotFoundException("Autor com e-mail '" + email + "' não encontrado."));
+    }
 }
+
+
+
+
+

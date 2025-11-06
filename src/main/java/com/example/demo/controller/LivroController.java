@@ -70,7 +70,19 @@ public class LivroController {
         LivroResponseDTO updateBook = livroService.updateLivro(id, livroRequestDTO);
 
         //Retorna 200 OK
+        return ResponseEntity.ok(updateBook);
+    }
 
+    //5. DELETE: REMOVER (HTTP 204 No Content - Soft Delete)
+
+    @DeleteMapping("/{id}") //Mapeia para DELETE /api/livros/{id}
+    public ResponseEntity<Void> deleteBook(@PathVariable Long id) {
+
+        //O Service faz o soft delete (chama livro.indisponivel() e salvando)
+        livroService.deletarLivro(id);
+
+        //Padrão REST: Retorna 204 No Content (sucesso sem corpo)
+        return ResponseEntity.noContent().build();
     }
 
 

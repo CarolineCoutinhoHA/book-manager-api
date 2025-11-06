@@ -27,7 +27,7 @@ public interface AutorMapper {
      */
     AutorResponseDTO toResponseDTO(Autor autor);
 
-    NomeAutorDTO toNomeAutor(Autor autor);
+    NomeAutorDTO toNomeAutorDTO(Autor autor);
 
 
     // ====================================================================
