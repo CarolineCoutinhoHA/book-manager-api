@@ -59,6 +59,9 @@ public class Autor {
     @ToString.Include
     private String telefone;
 
+    @Column(name = "disponibilidade", nullable = false)
+    private boolean disponibilidade = true;
+
 
     // ----------------------------------------------------------------------
     // 3. RELACIONAMENTO MANY-TO-MANY (M:N) - O Autor é o DONO
@@ -127,5 +130,13 @@ public class Autor {
     public void atribuirLivroAoAutor(Livro livro){
         // Usa o método .add() da coleção, que o Hibernate rastreia corretamente
         this.livrosSet.add(livro);
+    }
+
+    public void disponivel(){
+        this.disponibilidade = true;
+    }
+
+    public void indisponivel(){
+        this.disponibilidade = false;
     }
 }

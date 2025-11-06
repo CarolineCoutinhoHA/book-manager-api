@@ -2,6 +2,7 @@ package com.example.demo.mapper;
 
 import com.example.demo.dto.AutorResponseDTO;
 import com.example.demo.dto.AutorRequestDTO; // Usando o nome correto
+import com.example.demo.dto.NomeAutorDTO;
 import com.example.demo.model.Autor;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -25,6 +26,8 @@ public interface AutorMapper {
      * source = campo de origem -- campo na ENTIDADE (Autor)
      */
     AutorResponseDTO toResponseDTO(Autor autor);
+
+    NomeAutorDTO toNomeAutor(Autor autor);
 
 
     // ====================================================================
