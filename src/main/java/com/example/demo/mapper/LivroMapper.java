@@ -27,7 +27,7 @@ public interface LivroMapper {
     // Mapeamento 2: M:N (A Lógica Complexa)
     // target: autoresNome (no DTO de Resposta)
     // expression: Executa código Java 8 para transformar o Set<Autor> em List<String> (apenas nomes)
-    @Mapping(target = "autoresNome", expression = "java(livro.getAutores().stream().map(a -> a.getNome()).collect(Collectors.toList()))")
+    @Mapping(target = "autoresNome", expression = "java(livro.getAutores().stream().map(a -> a.getNome()).collect(java.util.stream.Collectors.toList()))")
     LivroResponseDTO toResponseDTO(Livro livro);
 
     // ====================================================================

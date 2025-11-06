@@ -11,6 +11,7 @@ import com.example.demo.repository.AutorRepository;
 import com.example.demo.repository.LivroRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -179,6 +180,29 @@ public class LivroService {
 
         log.info("AUDITORIA CONCLUÍDA: integridade dos dados checados.");
         log.warn("===================================");
+
+    }
+
+    //Listar todos os livros (GET) - com paginação
+    public Page<LivroResponseDTO> findAllLivrosPaginates(int page, int size){
+
+        //1. Criar o objeto Pageable
+        Pageable pageable = PageRequest.of(page, size, Sort.by("titulo"));
+
+        //2. Busca e filtra: Usa findAll(Pageable) + filtro de soft delete
+        Page<Livro> livroPage = livroRepository.findAll(pageable)
+                .map(livro -> livro); // Mantem a estrutura Page
+
+        //Aplica o filtro de soft delete.
+        List<Livro> livrosAtivos = livroPage.getContent().stream()
+                .filter(Livro::isDisponibilidade)
+                .collect(Collectors.toList());
+
+        //Cria um PageImpl com os resultados ativos para retornar metadados corretos
+        Page<Livro> filteredPage = new PageImpl<>(livrosAtivos, pageable, livroRepository.count());
+
+        //3. Mapeia a page de Entidades para a Page de DTOs completos (LivroResponseDTO)
+        return filteredPage.map(livroMapper::toResponseDTO);
     }
 
 
