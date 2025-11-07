@@ -112,6 +112,11 @@ public class Livro {
         this.isbn = novoIsbn;
     }
 
+    // Setter para MapStruct: Permite o mapeamento automático do ISBN na criação
+    public void setIsbn(String isbn) {
+        this.isbn = isbn;
+    }
+
     // Método de Domínio (Gerenciamento Bidirecional M:N)
     public void adicionarAutor(Autor autor){
         // 1. Adiciona o Autor à coleção deste Livro (Lado Inverso)

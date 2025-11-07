@@ -48,7 +48,7 @@ public class AutorService {
                 .filter(autor -> autor.getEmail().equals(email))
                 .findFirst() // Se encontra um diferente, para aqu
                 .ifPresent(autor -> {
-                    throw new BusinessException("E-mail " + email + " já resistrado. Não é permitido duplicidades.");
+                    throw new BusinessException("E-mail '" + email + "' já registrado. Não é permitido duplicidades.");
                 });
     }
 

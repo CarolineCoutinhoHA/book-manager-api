@@ -15,7 +15,6 @@ java {
 }
 
 configurations {
-    // Garante que o Lombok e o MapStruct sejam processados
     compileOnly {
         extendsFrom annotationProcessor
     }
@@ -34,20 +33,17 @@ dependencies {
     runtimeOnly 'com.h2database:h2'
 
     // --- Mapeamento e Anotações ---
-
-    // 🚨 1. MapStruct (A interface)
     implementation 'org.mapstruct:mapstruct:1.5.5.Final'
-
-    // 🚨 2. Lombok (Necessário para a compilação do MapStruct)
     compileOnly 'org.projectlombok:lombok'
-
-    // 🚨 3. Processadores (CRUCIAL: Onde a mágica acontece)
     annotationProcessor 'org.projectlombok:lombok'
-    annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final' // GERA A IMPLEMENTAÇÃO DO MAPPER
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
 
-    // --- Testes ---
+    // --- Testes (Ajustado) ---
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // 🚨 ADICIONAL CRUCIAL: Para que o ObjectMapper funcione nos testes de integração (JSON)
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind'
 }
 
 tasks.named('test') {

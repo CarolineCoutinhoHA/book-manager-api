@@ -13,10 +13,10 @@ public record AutorRequestDTO(
         String email,
 
         @NotBlank(message = "O CEP é obrigatório!")
-        @Pattern(regexp = "^\\\\d{5}-?\\\\d{3}$", message = "O CEP deve estar no fromato XXXXX-XXX")
+        @Pattern(regexp = "^\\d{5}-?\\d{3}$", message = "O CEP deve estar no formato XXXXX-XXX")
         String cep,
 
-        @Pattern(regexp = "^\\\\(\\\\d{2}\\\\)\\\\s\\\\d{4,5}-\\\\d{4}$", message = "Telefone deve estar no formato (XX) XXXXX-XXXX")
+        @Pattern(regexp = "^\\(\\d{2}\\)\\s\\d{4,5}-\\d{4}$", message = "Telefone deve estar no formato (XX) XXXXX-XXXX")
         String telefone
 
 )
