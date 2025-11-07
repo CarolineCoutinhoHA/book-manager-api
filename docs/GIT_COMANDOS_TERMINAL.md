@@ -206,6 +206,141 @@ git checkout -b nome   # Nova branch
 git merge branch       # Juntar branches
 ```
 
+## 📋 **PASSO A PASSO: CRIAR REPOSITÓRIO DO ZERO**
+
+```bash
+# 1. Criar pasta do projeto
+mkdir meu-projeto
+cd meu-projeto
+
+# 2. Inicializar Git
+git init
+
+# 3. Criar arquivo README
+echo "# Meu Projeto" > README.md
+
+# 4. Adicionar e fazer primeiro commit
+git add .
+git commit -m "Initial commit"
+
+# 5. Criar repositório no GitHub (via web)
+# - Ir para github.com
+# - Clicar em "New repository"
+# - Dar nome ao repositório
+# - NÃO marcar "Initialize with README"
+# - Clicar "Create repository"
+
+# 6. Conectar com repositório remoto
+git remote add origin https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git
+
+# 7. Enviar código para GitHub
+git branch -M main
+git push -u origin main
+```
+
+## 📋 **PASSO A PASSO: CLONAR REPOSITÓRIO**
+
+```bash
+# 1. Copiar URL do repositório no GitHub
+# - Ir para o repositório no GitHub
+# - Clicar no botão verde "Code"
+# - Copiar a URL HTTPS
+
+# 2. Clonar repositório
+git clone https://github.com/usuario/repositorio.git
+
+# 3. Entrar na pasta
+cd repositorio
+
+# 4. Verificar se está tudo OK
+git status
+git log --oneline
+
+# 5. Criar sua branch para trabalhar
+git checkout -b minha-feature
+
+# 6. Fazer suas alterações
+# ... editar arquivos ...
+
+# 7. Commit e push
+git add .
+git commit -m "Minha alteração"
+git push -u origin minha-feature
+```
+
+## 📋 **PASSO A PASSO: FAZER MERGE**
+
+### **MÉTODO 1: Merge Direto (Simples)**
+```bash
+# 1. Ir para branch de destino (geralmente main)
+git checkout main
+
+# 2. Atualizar branch main
+git pull origin main
+
+# 3. Fazer merge da sua branch
+git merge minha-feature
+
+# 4. Enviar para remoto
+git push origin main
+
+# 5. Deletar branch local (opcional)
+git branch -d minha-feature
+
+# 6. Deletar branch remota (opcional)
+git push origin --delete minha-feature
+```
+
+### **MÉTODO 2: Merge via Pull Request (Recomendado)**
+```bash
+# 1. Enviar sua branch para GitHub
+git push -u origin minha-feature
+
+# 2. Ir para GitHub no navegador
+# 3. Clicar em "Compare & pull request"
+# 4. Preencher título e descrição
+# 5. Clicar "Create pull request"
+# 6. Aguardar revisão (se necessário)
+# 7. Clicar "Merge pull request"
+# 8. Clicar "Confirm merge"
+
+# 9. Atualizar seu repositório local
+git checkout main
+git pull origin main
+
+# 10. Deletar branch local
+git branch -d minha-feature
+```
+
+### **RESOLVER CONFLITOS DE MERGE**
+```bash
+# 1. Tentar fazer merge
+git merge minha-feature
+# Se houver conflito, aparecerá mensagem
+
+# 2. Ver arquivos em conflito
+git status
+
+# 3. Editar arquivos manualmente
+# Procurar por:
+# <<<<<<< HEAD
+# código da branch atual
+# =======
+# código da branch sendo merged
+# >>>>>>> minha-feature
+
+# 4. Escolher qual código manter e remover marcadores
+
+# 5. Adicionar arquivos resolvidos
+git add arquivo-resolvido.txt
+
+# 6. Finalizar merge
+git commit -m "Resolver conflitos de merge"
+
+# 7. Enviar para remoto
+git push origin main
+```
+
 ## ⚠️ **DICAS IMPORTANTES**
 
 - **Sempre** faça `git status` antes de qualquer comando
@@ -213,3 +348,5 @@ git merge branch       # Juntar branches
 - **Sempre** teste antes de fazer merge para main
 - Use mensagens de commit **descritivas**
 - Faça commits **pequenos e frequentes**
+- **Sempre** atualize a main antes de fazer merge
+- Use **Pull Requests** para projetos em equipe
