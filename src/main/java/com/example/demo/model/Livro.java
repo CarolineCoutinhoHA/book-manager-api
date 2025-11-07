@@ -11,6 +11,34 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * =====================================================
+ * ENTIDADE LIVRO - MODELO DE DOMÍNIO
+ * =====================================================
+ * 
+ * RESPONSABILIDADES:
+ * - Representa um livro no sistema de biblioteca
+ * - Gerencia relacionamento Many-to-Many com Autor
+ * - Implementa Soft Delete (disponibilidade)
+ * - Controla regras de negócio do domínio
+ * 
+ * PADRÕES IMPLEMENTADOS:
+ * - Domain Model: Métodos de negócio na própria entidade
+ * - Soft Delete: Campo boolean ao invés de DELETE físico
+ * - UUID Pattern: Identificador público separado da PK
+ * - Bidirectional Mapping: Sincronização automática M:N
+ * 
+ * RELACIONAMENTOS:
+ * - Many-to-Many com Autor (lado inverso/mappedBy)
+ * - Tabela de junção: autor_livro (gerenciada por Autor)
+ * 
+ * REGRAS DE NEGÓCIO:
+ * - ISBN deve ser único no sistema
+ * - UUID gerado automaticamente no @PrePersist
+ * - Disponibilidade controla visibilidade (soft delete)
+ * - Relacionamento bidirecional mantido sincronizado
+ */
+
 // ----------------------------------------------------
 // ANOTAÇÕES BÁSICAS DE PERSISTÊNCIA E LOMBOK
 // ----------------------------------------------------
@@ -63,8 +91,13 @@ public class Livro {
     // 3. RELACIONAMENTO MANY-TO-MANY (M:N) - Lado INVERSO
     // ----------------------------------------------------
 
-    // MappedBy: Diz ao JPA que a tabela de junção é gerenciada pelo campo 'livrosSet' em Autor.java
-    @ManyToMany(mappedBy = "livrosSet", fetch = FetchType.LAZY)
+    // @JoinTable: Define a tabela de junção autor_livro (LADO DONO)
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "autor_livro",
+        joinColumns = @JoinColumn(name = "id_livro"),
+        inverseJoinColumns = @JoinColumn(name = "id_autor")
+    )
     @ToString.Exclude // Excluímos do toString para evitar LazyInitializationException
     private final Set<Autor> autores = new HashSet<>(); // Coleção de autores
 

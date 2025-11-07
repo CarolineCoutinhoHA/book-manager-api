@@ -11,93 +11,151 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-//@RestController: Marca a classe como um componente de controle REST (retorna JSON)
-@RestController
-//@RequestMapping: Define o caminho base da API (Ex: /api/autores)
-@RequestMapping("/api/autores")
-//@RequiredArgsConstructo: Injeta o AuthorService
-@RequiredArgsConstructor
+/**
+ * CONTROLLER DE AUTORES - CAMADA DE APRESENTAÇÃO
+ * 
+ * Este controller é responsável por:
+ * 1. Receber requisições HTTP do frontend
+ * 2. Validar dados de entrada (@Valid)
+ * 3. Chamar a camada de serviço (business logic)
+ * 4. Retornar respostas HTTP padronizadas
+ * 
+ * ENDPOINTS DISPONÍVEIS:
+ * - POST   /api/autores          → Criar novo autor
+ * - GET    /api/autores          → Listar todos os autores (paginado)
+ * - GET    /api/autores/{id}     → Buscar autor por ID
+ * - PUT    /api/autores/{id}     → Atualizar autor existente
+ * - DELETE /api/autores/{id}     → Deletar autor (soft delete)
+ * - GET    /api/autores/busca    → Buscar autor por email
+ */
+@RestController                           // Combina @Controller + @ResponseBody (retorna JSON)
+@RequestMapping("/api/autores")           // Base URL para todos os endpoints deste controller
+@RequiredArgsConstructor                  // Lombok: gera construtor com campos final (injeção de dependência)
 public class AutorController {
 
-    private final AutorService autorService; //Injeção do Service (Lógica de Negócio)
+    // INJEÇÃO DE DEPENDÊNCIA
+    // Service é injetado automaticamente pelo Spring via construtor (RequiredArgsConstructor)
+    private final AutorService autorService;
 
-    //1. POST: CRIAR AUTOR (HTTP 201 Created)
-
-    @PostMapping //Mapeia para o metodo POST /api/autores
-    //@RequestBody: Pega o Json de entrada. @Valid: Aciona as RNs de formato (@Email, etc)
+    /**
+     * ENDPOINT: POST /api/autores
+     * 
+     * FUNÇÃO: Criar um novo autor no sistema
+     * BODY: AutorRequestDTO (JSON) - dados do autor
+     * RETORNO: AutorResponseDTO (JSON) - autor criado com ID
+     * STATUS: 201 Created ou 400 Bad Request
+     */
+    @PostMapping                              // Mapeia requisições HTTP POST
     public ResponseEntity<AutorResponseDTO> createAuthor(@RequestBody @Valid AutorRequestDTO autorRequestDTO) {
-
-        //1. Delega para o Service: O Service faz a Regra de Negocio de e-mail único e salva a Entidade.
+        // @Valid: Ativa validações do Bean Validation (ex: @NotBlank, @Email)
+        // @RequestBody: Converte JSON do body da requisição para AutorRequestDTO
+        
+        // 1. Se chegou aqui, validações passaram
+        // 2. Chama service para criar autor (inclui validação de email único)
         AutorResponseDTO createdAuthor = autorService.createAutor(autorRequestDTO);
 
-        //2. Resposta (ResponseEntity): Retorna 201 Created e o objeto criado no corpo
+        // 3. Retorna 201 Created com o autor criado
         return ResponseEntity.status(HttpStatus.CREATED).body(createdAuthor);
     }
 
-    //2. GET: LISTAR TODOS COM PAGINAÇÃO
-
-    @GetMapping//Mapeia para GET /api/autores
-    //@RequestParam: Captura os parametos opcionais 'page' e 'size' de URL.
-    //defaultValue: Se o cliente não enciar os parâmetros, usa o valor padrão.
-    public ResponseEntity<org.springframework.data.domain.Page<NomeAutorDTO>> FindAllAutors(
-            @RequestParam(defaultValue = "0") int page, //Pagina inicial (0)
-            @RequestParam(defaultValue = "10") int size) {//Tamano da página (10 itens)
-
-        //1. Delegar para o Service, passandoasinstruções depaginação (page e size);
+    /**
+     * ENDPOINT: GET /api/autores?page=0&size=10
+     * 
+     * FUNÇÃO: Listar autores com paginação (para grandes volumes de dados)
+     * PARÂMETROS:
+     * - page: número da página (padrão: 0)
+     * - size: itens por página (padrão: 10)
+     * RETORNO: Page<NomeAutorDTO> - página com metadados
+     * STATUS: 200 OK
+     */
+    @GetMapping                               // Mapeia requisições HTTP GET
+    public ResponseEntity<Page<NomeAutorDTO>> FindAllAutors(
+            @RequestParam(defaultValue = "0") int page,    // Query parameter: ?page=1
+            @RequestParam(defaultValue = "10") int size) { // Query parameter: ?size=20
+        
+        // 1. Service implementa paginação usando Spring Data
         Page<NomeAutorDTO> autoresPage = autorService.findAllAutosPaginacao(page, size);
 
-        //2. Resposta: Retorna 200 OK com o objeto Page (que inclui a lista filtrada e metadados)
+        // 2. Page contém: dados + metadados (total, páginas, etc.)
         return ResponseEntity.ok(autoresPage);
     }
 
-    //GET: BUSCAR POR ID (HTTP 200 OK ou 404 via Handler)
-
-    @GetMapping("/{id}") //Mapeia para GET /api/autores/{id}
-    //@PathVariable: Cptura o ID do autor na URL
+    /**
+     * ENDPOINT: GET /api/autores/{id}
+     * 
+     * FUNÇÃO: Buscar um autor específico pelo ID
+     * PARÂMETRO: {id} - ID do autor na URL
+     * RETORNO: AutorResponseDTO (JSON)
+     * STATUS: 200 OK ou 404 Not Found
+     */
+    @GetMapping("/{id}")                      // {id} é uma variável na URL
     public ResponseEntity<AutorResponseDTO> findAutorById(@PathVariable Long id) {
-
-        //O Service lança RsourceNotFoundException se não achar
+        // @PathVariable captura o {id} da URL e converte para Long
+        
+        // 1. Chama service (se não encontrar, lança ResourceNotFoundException)
         AutorResponseDTO autor = autorService.findAutorById(id);
-
-        //Retorna 200 OK com o DTO completo (AutorResponseDTO)
+        
+        // 2. Se chegou aqui, autor foi encontrado
         return ResponseEntity.ok(autor);
     }
 
-    //4. PUT: ATUALIZAR (HTTP 200 OK)
-
-    @PutMapping("/{id}") //Mapeia para PUT /api/autores/{id}
+    /**
+     * ENDPOINT: PUT /api/autores/{id}
+     * 
+     * FUNÇÃO: Atualizar dados de um autor existente
+     * PARÂMETRO: {id} - ID do autor a ser atualizado
+     * BODY: AutorRequestDTO (JSON) - novos dados
+     * RETORNO: AutorResponseDTO (JSON) - autor atualizado
+     * STATUS: 200 OK, 404 Not Found ou 400 Bad Request
+     */
+    @PutMapping("/{id}")                      // Mapeia requisições HTTP PUT
     public ResponseEntity<AutorResponseDTO> updateAutor(
-            @PathVariable Long id, //Id do autor a ser atualizado
-            @RequestBody @Valid AutorRequestDTO autorRequestDTO) {// Novos dados a serem aplicados
-
-        //O Service lida com a RN de uncidade de e-mail e atualização dos campos
+            @PathVariable Long id,                    // ID da URL
+            @RequestBody @Valid AutorRequestDTO autorRequestDTO) {  // Dados do body
+        
+        // 1. Validações automáticas (@Valid)
+        // 2. Service busca autor existente e atualiza (inclui validação de email único)
         AutorResponseDTO updatedAutor = autorService.updateAutor(id, autorRequestDTO);
-
-        //Retorna 200 OK
+        
+        // 3. Retorna autor atualizado
         return ResponseEntity.ok(updatedAutor);
     }
 
-    //5. DELETE: REMOVER (HHTP 204 No Content - Soft Delete)
-    @DeleteMapping("/{id}") //Mapeia para DELETE /api/autores/{i}
+    /**
+     * ENDPOINT: DELETE /api/autores/{id}
+     * 
+     * FUNÇÃO: Remover autor do sistema (SOFT DELETE)
+     * PARÂMETRO: {id} - ID do autor a ser removido
+     * RETORNO: Sem conteúdo
+     * STATUS: 204 No Content ou 404 Not Found
+     * 
+     * NOTA: Implementa SOFT DELETE (marca como indisponível, não remove do banco)
+     */
+    @DeleteMapping("/{id}")                   // Mapeia requisições HTTP DELETE
     public ResponseEntity<Void> deleteAutor(@PathVariable Long id) {
-
-        //O Service faz o Soft Delete (chamando autor.indisponivel() e salvando)
+        // 1. Service marca autor como indisponível (soft delete)
         autorService.deleteAutor(id);
-
-        //Padrão REST: Retorna 204 No Content (sucesso sem corpo)
+        
+        // 2. Retorna 204 No Content (sucesso sem conteúdo)
         return ResponseEntity.noContent().build();
     }
 
-    // ----------------------------------------------------
-    // 4. GET: BUSCAR POR IDENTIFICADOR (E-MAIL/CPF)
-    // ----------------------------------------------------
-    @GetMapping("/busca") // Mapeia para GET /api/autores/busca?email=exemplo@mail.com
+    /**
+     * ENDPOINT: GET /api/autores/busca?email=exemplo@mail.com
+     * 
+     * FUNÇÃO: Buscar autor por email específico
+     * PARÂMETRO: email - Email do autor (query parameter)
+     * RETORNO: AutorResponseDTO (JSON)
+     * STATUS: 200 OK ou 404 Not Found
+     */
+    @GetMapping("/busca")                     // Endpoint específico para busca por email
     public ResponseEntity<AutorResponseDTO> findAuthorByEmail(
-            @RequestParam(name = "email") String email) { // Captura o valor após o '?'
-
-        // O Service faz o filtro manual e lança 404 se não encontrar
+            @RequestParam(name = "email") String email) { // Query parameter: ?email=teste@email.com
+        
+        // 1. Service faz busca por email e lança 404 se não encontrar
         AutorResponseDTO autor = autorService.findAutorByEmail(email);
 
+        // 2. Retorna autor encontrado
         return ResponseEntity.ok(autor);
     }
 }
